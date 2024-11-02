@@ -1,1 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text File Look</title>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #FFA500;
+            font-family: "Menlo", "Monaco", "Courier New", monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 40px;
+            max-width: 800px;
+            white-space: pre-wrap;
+        }
 
+        /* Optional: Add a subtle shadow to make it look like a window */
+        .text-container {
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+<div class="text-container">
+def get_net(your_data, your_compute):
+##add a model weights autosave
+##do the weights need to be in the same configuration as in training in order to do inference?
+##write a program that reads a har file and returns listing, price,  and features.
+##scale probabilities by 12 to maybe look more like chess. also, add a function that can take a list of tokens and return the most likely next token.
+##george soros discovered that you can better control the governing of a country by buying the lesser politicians.
+##in the same way, a great deal of money could be made by summing many edges accumulated over many small markets
+##split the train/val so that both contain 1/3 of the 3 datasets.
+
+##the way to get positive and negative numbers is to see if the value is above or below what we would 
+##expect based on the zipf distribution. values above zipf are positive, below are negative.
+import torch
+import torch.nn as nn
+from torch.nn import functional as F
+import tiktoken
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+
+w = 1337
+torch.manual_seed(w)
+
+print(
+      "\n                    |",
+      "\n____________    __ -+-  ____________ ",
+      "\n\_____     /   /_ \ |   \     _____/",
+      "\n \_____    \____/  \____/    _____/",
+      "\n  \_____                    _____/",
+      "\n     \___________  ___________/",
+      f"\n               /____\ {w} \n",
+      "\n     'def get_net' license MIT \n"
+      )
+
+PATH = "/Users?"
+PATH2 = "/Users?"
+PATH3 = "/Users?"
+# hyperparameters
+batch_size = 16 # how many independent sequences will we process in parallel?
+block_size = 64 # what is the maximum context length for predictions?
+max_iters = 5000
+eval_interval = 100
+learning_rate = 1e-3
+device = 'cuda' if torch.cuda.is_available() else 'mps'
+eval_iters = 200
+n_embd = 256
+n_head = 8
+n_layer = 8
+dropout = 0.30
+# ------------
+checkpoint_interval = 1000  # Save weights every 1000 iterations
+checkpoint_path = "/Users/jonathanpryde/Desktop/1972/Cyrus/Transformer/Models/"  # Directory to save checkpoints
+
+# wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
+with open(PATH, 'r', encoding='utf-8') as f:
+    text1 = f.read()
+with open(PATH2, 'r', encoding='utf-8') as f:
+    text2 = f.read()
+with open(PATH3, 'r', encoding='utf-8') as f:
+    text3 = f.read()
+
+text = text1 + text2 + text3
+# here are all the unique characters that occur in this text
+try:
+    encoder = tiktoken.get_encoding("gpt2")
+except:
+    # Fallback to a different encoding if gpt2 fails
+    encoder = tiktoken.get_encoding("p50k_base")
+    print("gpt2 failed, using p50k_base")
+
+tokdata = torch.tensor(encoder.encode(text), dtype=torch.long)
+vocab_size = encoder.n_vocab  # Instead of len(set(tokdata))
+
+# Train and test splits
+data = torch.tensor(encoder.encode(text), dtype=torch.long)
+n = int(0.9*len(data)) # first 90% will be train, rest val
+train_data = data[:n]
+val_data = data[n:]
+
+# data loading
+def get_batch(split):
+    # generate a small batch of data of inputs x and targets y
+    data = train_data if split == 'train' else val_data
+    ix = torch.randint(len(data) - block_size, (batch_size,))
+    x = torch.stack([data[i:i+block_size] for i in ix])
+    y = torch.stack([data[i+1:i+block_size+1] for i in ix])
+    x, y = x.to(device), y.to(device)
+    return x, y
+
+@torch.no_grad()
+def estimate_loss():
+    out = {}
+    model.eval()
+    for split in ['train', 'val']:
+        losses = torch.zeros(eval_iters)
+        for k in range(eval_iters):
+            X, Y = get_batch(split)
+            logits, loss = model(X, Y)
+            losses[k] = loss.item()
+        out[split] = losses.mean()
+    model.train()
+    return out
+
+class Head(nn.Module):
+    """ one head of self-attention """
+
+    def __init__(self, head_size):
+        super().__init__()
+        self.key = nn.Linear(n_embd, head_size, bias=False)
+        self.query = nn.Linear(n_embd, head_size, bias=False)
+        self.value = nn.Linear(n_embd, head_size, bias=False)
+        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        B,T,C = x.shape
+        k = self.key(x)   
+        q = self.query(x) 
+        wei = q @ k.transpose(-2,-1) * C**-0.5 
+        wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
+        wei = F.softmax(wei, dim=-1) 
+        wei = self.dropout(wei)
+        v = self.value(x)
+        out = wei @ v
+        return out  # Remove the attention weights return
+
+class MultiHeadAttention(nn.Module):
+    """ multiple heads of self-attention in parallel """
+
+    def __init__(self, num_heads, head_size):
+        super().__init__()
+        self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)])
+        self.proj = nn.Linear(n_embd, n_embd)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        out = torch.cat([h(x) for h in self.heads], dim=-1)
+        out = self.dropout(self.proj(out))
+        return out
+
+class FeedFoward(nn.Module):
+    """ a simple linear layer followed by a non-linearity """
+
+    def __init__(self, n_embd):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(n_embd, 4 * n_embd),
+            nn.ReLU(),
+            nn.Linear(4 * n_embd, n_embd),
+            nn.Dropout(dropout),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+class Block(nn.Module):
+    """ Transformer block: communication followed by computation """
+
+    def __init__(self, n_embd, n_head):
+        # n_embd: embedding dimension, n_head: the number of heads we'd like
+        super().__init__()
+        head_size = n_embd // n_head
+        self.sa = MultiHeadAttention(n_head, head_size)
+        self.ffwd = FeedFoward(n_embd)
+        self.ln1 = nn.LayerNorm(n_embd)
+        self.ln2 = nn.LayerNorm(n_embd)
+
+    def forward(self, x):
+        x = x + self.sa(self.ln1(x))#addition to main data stream to prevent overfitting
+        x = x + self.ffwd(self.ln2(x))
+        return x
+
+# super simple bigram model
+class BigramLanguageModel(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        # each token directly reads off the logits for the next token from a lookup table
+        self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
+        self.position_embedding_table = nn.Embedding(block_size, n_embd)
+        self.blocks = nn.Sequential(*[Block(n_embd, n_head=n_head) for _ in range(n_layer)])
+        self.ln_f = nn.LayerNorm(n_embd) # final layer norm
+        self.lm_head = nn.Linear(n_embd, vocab_size)
+
+    def forward(self, idx, targets=None):
+        B, T = idx.shape
+
+        # idx and targets are both (B,T) tensor of integers
+        tok_emb = self.token_embedding_table(idx) # (B,T,C)
+        pos_emb = self.position_embedding_table(torch.arange(T, device=device)) # (T,C)
+        x = tok_emb + pos_emb # (B,T,C)
+        x = self.blocks(x) # (B,T,C)
+        x = self.ln_f(x) # (B,T,C)
+        logits = self.lm_head(x) # (B,T,vocab_size)
+
+        if targets is None:
+            loss = None
+        else:
+            B, T, C = logits.shape
+            logits = logits.view(B*T, C)
+            targets = targets.view(B*T)
+            loss = F.cross_entropy(logits, targets)
+
+        return logits, loss
+
+    def generate(self, idx, max_new_tokens):
+        # idx is (B, T) array of indices in the current context
+        for _ in range(max_new_tokens):
+            # crop idx to the last block_size tokens
+            idx_cond = idx[:, -block_size:]
+            # get the predictions
+            logits, loss = self(idx_cond)
+            # focus only on the last time step
+            logits = logits[:, -1, :] # becomes (B, C)
+            # apply softmax to get probabilities
+            probs = F.softmax(logits, dim=-1) # (B, C)
+            # sample from the distribution
+            idx_next = torch.multinomial(probs, num_samples=1) # (B, 1)
+            # append sampled index to the running sequence
+            idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
+        return idx
+        
+    def get_heart_of_truth(self, idx, max_new_tokens):
+        # idx is (B, T) array of indices in the current context
+        for _ in range(max_new_tokens):
+            # Crop idx to the last block_size tokens
+            idx_cond = idx[:, -block_size:]
+            # Get the predictions
+            logits, loss = self(idx_cond)
+            # Focus only on the last time step
+            logits = logits[:, -1, :]  # (B, C)
+            # Apply softmax to get probabilities
+            probs = F.softmax(logits, dim=-1)  # (B, C)
+            
+            # Sort all probabilities in descending order
+            sorted_probs, sorted_indices = torch.sort(probs, descending=True)
+            
+            # Get top 10 highest probabilities and their indices for display
+            top_probs, top_indices = sorted_probs[:, :10], sorted_indices[:, :10]
+            print(f"Top 10 tokens: {[encoder.decode([token.item()]) for token in top_indices[0]]}")
+            print(f"Their probabilities: {top_probs[0].tolist()}\n")
+            
+            # Inform the user about the total number of tokens
+            print(f"Total tokens in vocabulary: {vocab_size}")
+            print("You can choose any rank from 1 to", vocab_size)
+            
+            # Get user input for token selection
+            while True:
+                try:
+                    rank_choice = int(input(f"Enter rank of token to choose (1-{vocab_size}): "))
+                    if 1 <= rank_choice <= vocab_size:
+                        break
+                    print(f"Please enter a number between 1 and {vocab_size}")
+                except ValueError:
+                    print("Please enter a valid number")
+            
+            # Check if maximum context length is reached
+            if len(idx[0]) >= max_new_tokens:
+                print(f"Reached maximum context length of {max_new_tokens} tokens")
+                break
+                
+            # Select the token based on user's rank choice
+            # Note: rank_choice=1 is the highest probability token
+            selected_token_index = sorted_indices[0][rank_choice - 1].unsqueeze(0).unsqueeze(0)
+            print(f"Selected token: {encoder.decode([selected_token_index[0].item()])} (rank {rank_choice})\n")
+            
+            # Append sampled index to the running sequence
+            idx = torch.cat((idx, selected_token_index), dim=1)  # (B, T+1)
+            print("Current sequence:", encoder.decode(idx[0].tolist()), "\n")
+            
+        return probs
+
+
+model = BigramLanguageModel()
+m = model.to(device)
+# print the number of parameters in the model
+print(sum(p.numel() for p in m.parameters())/1e6, 'M parameters')
+
+# create a PyTorch optimizer
+optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+
+for iter in range(max_iters):
+
+    # every once in a while evaluate the loss on train and val sets
+    if iter % eval_interval == 0 or iter == max_iters - 1:
+        losses = estimate_loss()
+        print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+
+    # sample a batch of data
+    xb, yb = get_batch('train')
+
+    # evaluate the loss
+    logits, loss = model(xb, yb)
+    optimizer.zero_grad(set_to_none=True)
+    loss.backward()
+    optimizer.step()
+
+# generate from the model
+context = torch.zeros((1, 1), dtype=torch.long, device=device)
+#print((encoder.decode(m.generate(context, max_new_tokens=4)[0].tolist())))
+m.get_heart_of_truth(context, max_new_tokens=2000)[0].tolist()
+plt.show()
+
+
+
+
+
+
+</div>
+</body>
+</html>
