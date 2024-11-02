@@ -1,1 +1,145 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text File Look</title>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #FFA500;
+            font-family: "Menlo", "Monaco", "Courier New", monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 40px;
+            max-width: 800px;
+            white-space: pre-wrap;
+        }
+
+        /* Optional: Add a subtle shadow to make it look like a window */
+        .text-container {
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+<div class="text-container">
+import sanitycheck:
+  Here's a breakdown of when to use different algorithms:
+
+### Linear Regression
+Best suited for:
+- Simple linear relationships between features and target
+- Continuous numerical output predictions
+- Cases where interpretability is important
+- Smaller datasets
+- When you need to understand feature importance
+- When computational resources are limited
+- Problems where overfitting needs to be strictly controlled
+
+Example problems:
+- House price prediction based on square footage
+- Sales forecasting
+- Temperature prediction
+
+### Logistic Regression
+Best suited for:
+- Binary classification problems
+- When probability outputs are needed
+- When interpretability is important
+- Smaller datasets
+- Problems with clear decision boundaries
+- When feature importance understanding is crucial
+
+Example problems:
+- Spam detection
+- Customer churn prediction
+- Disease diagnosis (yes/no)
+
+### Softmax Regression
+Best suited for:
+- Multi-class classification with mutually exclusive classes
+- When probability distribution across classes is needed
+- When linear decision boundaries are sufficient
+- Smaller datasets
+- When interpretability matters
+
+Example problems:
+- Basic document classification
+- Simple image classification with few classes
+- Product categorization
+
+### Decision Trees / XGBoost
+Best suited for:
+- Both regression and classification problems
+- Tabular data
+- Non-linear relationships
+- When feature interactions are important
+- When handling missing values is needed
+- When mixed data types are present
+- When feature importance is needed
+- Medium-sized datasets
+
+Example problems:
+- Credit risk assessment
+- Customer segmentation
+- Fraud detection
+- Stock price prediction
+
+### Neural Networks are necessary when:
+1. **Complex Pattern Recognition**:
+   - Image recognition
+   - Speech recognition
+   - Natural language processing
+   - Video analysis
+
+2. **Large Datasets**:
+   - When you have millions of training examples
+   - When the data is high-dimensional
+
+3. **Complex Relationships**:
+   - Non-linear patterns that simpler models can't capture
+   - Deep hierarchical patterns
+   - Sequential data with long-term dependencies
+
+4. **Feature Learning**:
+   - When automatic feature extraction is needed
+   - When dealing with raw, unstructured data
+
+5. **Specific Architectures Required**:
+   - Convolutional Neural Networks for images
+   - Recurrent Neural Networks for sequences
+   - Transformers for language
+   - Generative models (GANs, VAEs)
+
+### General Rule of Thumb:
+1. **Start Simple**:
+   - Begin with simpler models (linear/logistic regression, decision trees)
+   - Only move to more complex models if necessary
+
+2. **Consider Resources**:
+   - Neural networks require more:
+     - Computing power
+     - Training data
+     - Training time
+     - Hyperparameter tuning
+
+3. **Consider Interpretability**:
+   - If you need to explain the model's decisions, prefer simpler models
+   - Neural networks are often "black boxes"
+
+4. **Consider Data Size**:
+   - Small data (hundreds/thousands): Traditional ML
+   - Big data (millions+): Deep Learning
+
+5. **Consider Problem Type**:
+   - Structured, tabular data: Traditional ML often works better
+   - Unstructured data (images, text, audio): Neural networks usually necessary
+
+</div>
+</body>
+</html>
