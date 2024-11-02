@@ -5,13 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* VSCode-like colors and styling */
-        .code-logo {
-            font-family: 'Consolas', 'Monaco', monospace;
+        body {
             background-color: #1e1e1e; /* VSCode dark theme background */
-            padding: 20px;
-            border-radius: 5px;
-            display: inline-block;
+            color: #d4d4d4; /* Default text color for VSCode dark theme */
+            font-family: 'Consolas', 'Monaco', monospace;
+            margin: 20px;
+        }
+
+        .code-logo {
+            font-size: 24px;
+            margin-bottom: 20px;
         }
         
         .keyword {
@@ -25,6 +28,15 @@
         .punctuation {
             color: #d4d4d4; /* VSCode default text color */
         }
+
+        a {
+            color: #4ec9b0; /* VSCode link color */
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -33,8 +45,11 @@
         <span class="function">get_net</span><span class="punctuation">:</span>
     </div>
 
+    <p>Site is up and running!</p>
     <h2>The Great URLs:</h2>
-    <p>https://huggingface.co</p>
-    <p>https://www.youtube.com/andrejkarpathy</p>
-    <p>https://www.youtube.com/@ArtemKirsanov</p>
-    <p>https://www.youtube.com/@3blue1brown</
+    <p><a href="https://huggingface.co">https://huggingface.co</a></p>
+    <p><a href="https://www.youtube.com/andrejkarpathy">https://www.youtube.com/andrejkarpathy</a></p>
+    <p><a href="https://www.youtube.com/@ArtemKirsanov">https://www.youtube.com/@ArtemKirsanov</a></p>
+    <p><a href="https://www.youtube.com/@3blue1brown">https://www.youtube.com/@3blue1brown</a></p>
+</body>
+</html>
